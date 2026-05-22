@@ -516,20 +516,19 @@ panel = panel |>
   )
 
 # ---------------------------------------------------------------------------
-# Save as .rds and .csv
-# Note: full panel (~3.7M rows) produces a large CSV (~300-500 MB).
+# Save as .rds and .csv.gz
 # ---------------------------------------------------------------------------
 
 rds_path = here::here("data", "psid_panel_long.rds")
-csv_path = here::here("data", "psid_panel_long.csv")
+csv_path = here::here("data", "psid_panel_long.csv.gz")
 
 message("Saving .rds...")
 saveRDS(panel, rds_path)
 
-message("Saving .csv (may take a moment for large panel)...")
+message("Saving .csv.gz...")
 write_csv(panel, csv_path)
 
 message(sprintf(
-  "\nDone. %d person-year obs | %d individuals | %d variables\n  .rds: %s\n  .csv: %s",
+  "\nDone. %d person-year obs | %d individuals | %d variables\n  .rds: %s\n  .csv.gz: %s",
   nrow(panel), length(unique(panel$pid)), ncol(panel), rds_path, csv_path
 ))
