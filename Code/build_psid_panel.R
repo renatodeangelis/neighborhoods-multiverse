@@ -346,7 +346,20 @@ ind_vars = tibble(
     "ER30615","ER30651","ER30698","ER30742","ER30815","ER33110","ER33210",
     "ER33310","ER33410","ER33510","ER33610","ER33710","ER33810","ER33910",
     "ER34010","ER34110","ER34210","ER34311","ER34510","ER34710","ER34910",
-    "ER35110")
+    "ER35110"),
+
+  # Sequence number: role in family unit that wave.
+  # 0 = not in sample; 1 = head; 2 = spouse/partner; 10-19 = children; etc.
+  # Use seq_num > 0 (not interview_num > 0) to identify truly enumerated
+  # person-years — interview_num is inherited from ER30001 and is never 0.
+  seq_num = c(
+    "ER30003","ER30021","ER30044","ER30068","ER30092","ER30118","ER30139",
+    "ER30161","ER30189","ER30218","ER30247","ER30284","ER30314","ER30344",
+    "ER30374","ER30400","ER30430","ER30464","ER30499","ER30536","ER30571",
+    "ER30607","ER30643","ER30690","ER30734","ER30807",
+    "ER33103","ER33203","ER33303","ER33403","ER33503","ER33603","ER33703",
+    "ER33803","ER33903","ER34003","ER34103","ER34203","ER34304","ER34503",
+    "ER34703","ER34903","ER35102")
 )
 
 stopifnot(all(map_int(ind_vars, length) == length(YEARS)))
@@ -449,7 +462,7 @@ message(sprintf("Individual file: %d persons, %d cols read", nrow(ind_wide), nco
 
 message("Pivoting individual file to long format...")
 
-annual_concepts = c("age_ind", "educ_ind", "emp_status", "moved_ind", "moved_yr_ind")
+annual_concepts = c("age_ind", "educ_ind", "emp_status", "moved_ind", "moved_yr_ind", "seq_num")
 
 ind_long = map_dfr(seq_along(YEARS), function(i) {
   yr         = YEARS[i]
@@ -460,7 +473,7 @@ ind_long = map_dfr(seq_along(YEARS), function(i) {
 
   for (v in annual_concepts) {
     code    = wave_codes[[v]]
-    row[[v]] = if (!is.na(code) && code %in% names(ind_wide)) {
+    row[[v]] = if (isTRUE(!is.na(code)) && code %in% names(ind_wide)) {
       ind_wide[[code]]
     } else {
       NA_real_
