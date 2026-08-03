@@ -4,7 +4,8 @@ ncdb_link = "https://www.dropbox.com/scl/fi/87zmcughgnq82z4ryl9o0/census_tracts.
 ncdb = read_csv(ncdb_link)
 
 # --- Drop columns not relevant to analysis
-# Removed: non-B/W race shares, female labor force, multiracial, race-by-sex, military, industry
+# Removed: non-B/W race shares, multiracial (incl. alone/combo W/B variants),
+#          race-by-sex, military, industry
 # Kept: Hispanic shares (SHRHSP, SHRHW, SHRHB, NONHISP, WBIAHSP, OTHHISX)
 # Note: IND0* drops industry codes only; INDEMP (civilian employed persons) is kept
 drop_prefixes = c(
@@ -15,6 +16,9 @@ drop_prefixes = c(
   "MINAPI", "MAXAPI", "MINOTH", "MAXOTH",
   "MINNHI", "MAXNHI", "MINNHR", "MAXNHR", "MINNHH", "MAXNHH",
   "MINNHA", "MAXNHA", "MINNHO", "MAXNHO",
+  # White/Black alone vs alone-or-combination counts (multiracial counting variants)
+  "MINWHT", "MAXWHT", "MINBLK", "MAXBLK",
+  "MINNHW", "MAXNHW", "MINNHB", "MAXNHB",
   # Multiracial
   "MR1POP", "MR2POP", "MR3POP", "MRAPOP", "MRANHS", "MRAHSP",
   # Race × sex (16+) and race × age (16–19)
@@ -26,7 +30,11 @@ drop_prefixes = c(
   # Military
   "ARMFRM", "ARMFRF",
   # Industry codes (IND0* prefix targets only the sector-level counts)
-  "IND0"
+  "IND0",
+  # Child under 5
+  "KIDS",
+  # Misc.
+  "ALTLAB", "SPANAM", "SPLANG", "YTHPOP", "OCC0"
 )
 
 ncdb = ncdb |> select(-starts_with(drop_prefixes))
@@ -39,3 +47,19 @@ nms    = names(ncdb)
 drop_n = Filter(\(x) str_remove(x, "N$") %in% nms, nms[str_detect(nms, "N$")])
 drop_d = Filter(\(x) str_remove(x, "D$") %in% nms, nms[str_detect(nms, "D$")])
 ncdb   = ncdb |> select(-all_of(c(drop_n, drop_d)))
+
+# --- Drop mismatched-stem counts/denominators where a proportion or mean is already kept
+nms = names(ncdb)
+drop_mismatched = c(
+  # Welfare count/denom (stem: WELFAR vs WELFARE proportion)
+  nms[str_detect(nms, "^WELFAR") & str_detect(nms, "[ND]$")],
+  # Welfare aggregate/denom (stem: AVWEL vs AVWELIN mean)
+  nms[str_detect(nms, "^AVWEL") & !str_detect(nms, "^AVWELIN")],
+  # Self-employment aggregate/denom (stem: AVSEME vs AVSEMER mean)
+  nms[str_detect(nms, "^AVSEME") & !str_detect(nms, "^AVSEMER")],
+  # Unemployment count/denom (stem: UNEMPT vs UNEMPRT rate)
+  nms[str_detect(nms, "^UNEMPT")],
+  # Male/female employment ratio counts (stem: CMEPR/CFEPR vs MEPR/FEPR rates)
+  nms[str_detect(nms, "^CMEPR|^CFEPR")]
+)
+ncdb = ncdb |> select(-all_of(drop_mismatched))
